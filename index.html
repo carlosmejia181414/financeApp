@@ -1,0 +1,396 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Mi Balance</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="vendor/chart.umd.min.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-icon">💰</span>
+      <div>
+        <h1>Mi Balance</h1>
+        <p>Finanzas personales</p>
+      </div>
+    </div>
+
+    <nav class="menu">
+      <button class="nav-btn active" data-section="transactionsSection">Registrar</button>
+      <button class="nav-btn" data-section="categoriesSection">Categorías</button>
+      <button class="nav-btn" data-section="chartsSection">Gráficos</button>
+      <button class="nav-btn" data-section="analyticsSection">Analytics</button>
+    </nav>
+  </aside>
+
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h2 id="pageTitle">Registrar movimientos</h2>
+        <p>Controla ingresos, gastos y ahorro.</p>
+      </div>
+      <div class="topbar-actions">
+        <button id="exportBtn" class="secondary">Exportar respaldo</button>
+        <button id="importBtn" class="secondary">Importar respaldo</button>
+        <input type="file" id="importFile" accept=".json,application/json" class="hidden" />
+      </div>
+    </header>
+
+    <section class="filters card">
+      <h3>Filtros</h3>
+      <div class="grid two-columns">
+        <label>Mes <select id="monthFilter"></select></label>
+        <label>Año <select id="yearFilter"></select></label>
+      </div>
+    </section>
+
+    <section class="summary">
+      <div class="summary-card income"><h3>Ingresos</h3><p id="totalIncome">$0.00</p></div>
+      <div class="summary-card fixed"><h3>Gastos fijos</h3><p id="totalFixed">$0.00</p></div>
+      <div class="summary-card variable"><h3>Variables</h3><p id="totalVariable">$0.00</p></div>
+      <div class="summary-card savings"><h3>Ahorro</h3><p id="savingsBalance">$0.00</p></div>
+    </section>
+
+    <section id="transactionsSection" class="page-section active-section">
+      <div class="card">
+        <h3>Registrar ingreso o gasto</h3>
+        <form id="transactionForm">
+          <div class="grid form-grid">
+            <label>Fecha <input type="date" id="date" required /></label>
+            <label>Tipo
+              <select id="type" required>
+                <option value="income">Ingreso</option>
+                <option value="fixed">Gasto fijo recurrente</option>
+                <option value="variable">Gasto variable</option>
+              </select>
+            </label>
+            <label>Categoría <select id="categorySelect" required></select></label>
+            <label>Monto <input type="number" id="amount" min="0" step="0.01" required /></label>
+          </div>
+          <label>Descripción <input type="text" id="description" placeholder="Ej: renta, supermercado, internet" /></label>
+          <div class="form-actions">
+            <button type="submit" id="submitBtn">Agregar</button>
+            <button type="button" id="cancelEditBtn" class="secondary hidden">Cancelar edición</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="dashboard-row">
+        <div class="card">
+          <h3>Gráfico del mes</h3>
+          <div class="chart-box"><canvas id="monthlyChart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <h3>Detalle del mes</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Monto</th><th>Categoría</th><th>Descripción</th><th>Tipo</th><th>Acción</th></tr></thead>
+              <tbody id="monthlyDetailTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Movimientos del mes</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Monto</th><th>Acción</th></tr></thead>
+            <tbody id="transactionTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="categoriesSection" class="page-section">
+      <div class="card">
+        <h3>Administrar categorías</h3>
+        <form id="categoryForm">
+          <div class="grid category-form-grid">
+            <label>Nombre <input type="text" id="categoryName" required /></label>
+            <label>Tipo
+              <select id="categoryKind" required>
+                <option value="income">Ingreso</option>
+                <option value="fixed">Gasto fijo recurrente</option>
+                <option value="variable">Gasto variable</option>
+              </select>
+            </label>
+            <div class="form-actions align-end">
+              <button type="submit" id="categorySubmitBtn">Agregar categoría</button>
+              <button type="button" id="categoryCancelBtn" class="secondary hidden">Cancelar</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Lista de categorías</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Categoría</th><th>Tipo</th><th>Uso</th><th>Acción</th></tr></thead>
+            <tbody id="categoriesTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="chartsSection" class="page-section">
+      <div class="charts-grid pro-charts-grid">
+        <div class="card">
+          <h3>Distribución mensual</h3>
+          <p class="muted">Gastos fijos, variables y ahorro del mes seleccionado.</p>
+          <div class="chart-box"><canvas id="chartsMonthlyChart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <h3>Gasto por categoría</h3>
+          <p class="muted">Ranking de categorías de gasto del mes.</p>
+          <div class="chart-box"><canvas id="categoryReportChart"></canvas></div>
+        </div>
+
+        <div class="card wide-card">
+          <h3>Ingresos, gastos y ahorro por mes</h3>
+          <p class="muted">Comparativo anual por mes.</p>
+          <div class="chart-box chart-box-wide"><canvas id="yearlyChart"></canvas></div>
+        </div>
+
+        <div class="card wide-card">
+          <h3>Tendencia de gastos y ahorro</h3>
+          <p class="muted">Evolución mensual de gastos totales y ahorro.</p>
+          <div class="chart-box chart-box-wide"><canvas id="expenseTrendChart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <h3>Pareto de gastos</h3>
+          <p class="muted">Detecta las categorías que concentran la mayor parte del gasto.</p>
+          <div class="chart-box"><canvas id="paretoChart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <h3>% de gasto por categoría</h3>
+          <p class="muted">Participación porcentual de cada categoría en el gasto total.</p>
+          <div class="chart-box"><canvas id="categoryShareChart"></canvas></div>
+        </div>
+
+        <div class="card wide-card">
+          <h3>Gastos fijos vs variables por mes</h3>
+          <p class="muted">Compara qué parte de tus gastos son compromisos y qué parte es ajustable.</p>
+          <div class="chart-box chart-box-wide"><canvas id="fixedVariableStackedChart"></canvas></div>
+        </div>
+
+        <div class="card wide-card">
+          <h3>Ahorro acumulado anual</h3>
+          <p class="muted">Suma progresiva del ahorro del año seleccionado.</p>
+          <div class="chart-box chart-box-wide"><canvas id="cumulativeSavingsChart"></canvas></div>
+        </div>
+
+        <div class="card wide-card">
+          <h3>Gastos acumulados anuales</h3>
+          <p class="muted">Suma progresiva de gastos fijos, variables y totales.</p>
+          <div class="chart-box chart-box-wide"><canvas id="cumulativeExpensesChart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <h3>Ingreso vs gasto mensual</h3>
+          <p class="muted">Relación entre lo que entra y lo que sale en el mes seleccionado.</p>
+          <div class="chart-box"><canvas id="incomeExpenseRatioChart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <h3>Score 50/30/20</h3>
+          <p class="muted">Visualiza qué tan cerca estás de la regla sugerida.</p>
+          <div class="chart-box"><canvas id="ruleScoreChart"></canvas></div>
+        </div>
+
+        <div class="card wide-card">
+          <h3>Heatmap anual por categoría</h3>
+          <p class="muted">Intensidad de gastos por categoría y por mes.</p>
+          <div id="categoryHeatmap" class="heatmap-box"></div>
+        </div>
+
+        <div class="card wide-card">
+          <h3>Tabla resumen de gráficos</h3>
+          <p class="muted">Lectura rápida de los indicadores visualizados.</p>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr><th>Indicador</th><th>Resultado</th><th>Lectura</th></tr>
+              </thead>
+              <tbody id="chartsSummaryTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="analyticsSection" class="page-section">
+      <div class="analytics-grid">
+        <div class="card wide-card">
+          <h3>Panel financiero ejecutivo</h3>
+          <div id="analyticsCards" class="analytics-cards expanded"></div>
+        </div>
+
+        <div class="card">
+          <h3>Top categorías del mes</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Categoría</th><th>Tipo</th><th>Monto</th><th>% ingreso</th><th>% gasto</th></tr></thead>
+              <tbody id="analyticsCategoryTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Regla 50/30/20</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Grupo</th><th>Monto</th><th>% ingreso</th><th>Meta</th><th>Estado</th></tr></thead>
+              <tbody id="ruleTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Comparativo vs mes anterior</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Métrica</th><th>Actual</th><th>Anterior</th><th>Diferencia</th><th>% cambio</th></tr></thead>
+              <tbody id="comparisonTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Promedios anuales</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Métrica</th><th>Promedio mensual</th><th>Total anual</th></tr></thead>
+              <tbody id="averageTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Proyección anual</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Métrica</th><th>Proyección 12 meses</th><th>Comentario</th></tr></thead>
+              <tbody id="projectionTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Pareto de gastos 80/20</h3>
+          <p class="muted">Detecta qué categorías concentran la mayor parte de tus gastos.</p>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>#</th><th>Categoría</th><th>Monto</th><th>% gasto</th><th>% acumulado</th><th>Prioridad</th></tr></thead>
+              <tbody id="paretoTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Variación por categoría vs mes anterior</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Categoría</th><th>Actual</th><th>Anterior</th><th>Diferencia</th><th>% cambio</th></tr></thead>
+              <tbody id="categoryVarianceTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Compromisos recurrentes</h3>
+          <p class="muted">Pagos fijos que se repiten cada mes y afectan tu flujo de caja.</p>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Día</th><th>Categoría</th><th>Descripción</th><th>Monto</th></tr></thead>
+              <tbody id="recurringTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Análisis de gastos variables</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Métrica</th><th>Valor</th><th>Lectura</th></tr></thead>
+              <tbody id="variableAnalysisTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card wide-card">
+          <h3>Matriz anual por categoría</h3>
+          <p class="muted">Gastos por categoría distribuidos por mes del año seleccionado.</p>
+          <div class="table-wrapper wide-scroll">
+            <table>
+              <thead id="categoryMatrixHead"></thead>
+              <tbody id="categoryMatrixBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Score financiero</h3>
+          <div id="financialScoreBox" class="score-box"></div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Factor</th><th>Resultado</th><th>Impacto</th></tr></thead>
+              <tbody id="scoreBreakdownTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Calidad de datos</h3>
+          <p class="muted">Ayuda a detectar registros incompletos o poco útiles para análisis.</p>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Revisión</th><th>Resultado</th><th>Sugerencia</th></tr></thead>
+              <tbody id="dataQualityTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Plan de optimización</h3>
+          <p class="muted">Reducción sugerida para acercarte a una meta de ahorro del 20%.</p>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Categoría</th><th>Gasto actual</th><th>Reducción sugerida</th><th>Nuevo objetivo</th></tr></thead>
+              <tbody id="optimizationTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Alertas de gasto</h3>
+          <ul id="alertsList" class="insights-list alert-list"></ul>
+        </div>
+
+        <div class="card">
+          <h3>Sugerencias automáticas</h3>
+          <ul id="suggestionsList" class="insights-list suggestion-list"></ul>
+        </div>
+
+        <div class="card wide-card">
+          <h3>Insights generales</h3>
+          <ul id="insightsList" class="insights-list"></ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
